@@ -74,13 +74,15 @@ var numstones = 3;
 
 var monsters = [  //array de monstruos
 ];
-var nummonsters = 1;
+var nummonsters = 0 ;
+
+var lives = 3;  //vidas
 
 
 // Handle keyboard controls
 var keysDown = {};
 var pause = false;
-console.log(pause)
+var newgame = false;
 
 addEventListener("keydown", function (e) {
 	keysDown[e.keyCode] = true;
@@ -92,12 +94,16 @@ addEventListener("keyup", function (e) {
 
 addEventListener("keypress", function(e){
 	if (e.charCode == 32){
-		var p = document.getElementById("pause");
+		var p = document.getElementById("main");
 		var texto = "";
 		if (pause){
+			if (newgame){
+				newgame = false;
+				startnewgame();
+			}
 			pause = false;
 		}else{
-			texto = "<h2>PAUSA</h2>"
+			texto = "<h2 id='pause'>PAUSA</h2>"
 			pause = true;
 		}
 		p.innerHTML = texto;
@@ -107,19 +113,33 @@ addEventListener("keypress", function(e){
 
 
   
-function stonetouching(){
+function touching(array){
 
-	for( var i = 0 ;  i < stones.length ; i++){
-		if (hero.x <= (stones[i].x + 16)  
-			&& stones[i].x <= (hero.x + 16) 
-			&& hero.y <= (stones[i].y + 16) 
-			&& stones[i].y <= (hero.y + 16))
+	for( var i = 0 ;  i < array.length ; i++){
+		if (hero.x <= (array[i].x + 16)  
+			&& array[i].x <= (hero.x + 16) 
+			&& hero.y <= (array[i].y + 16) 
+			&& array[i].y <= (hero.y + 16))
 		
 			return true;  //si alguno se da acaba como true
 	}
 	return false;
 	
 
+};
+
+function startnewgame(){
+
+	hero = {
+		speed: 256, // movement in pixels per second
+		x: canvas.width / 2,
+		y: canvas.height / 2
+	};
+	princessesCaught = 0;  //princesas atrapadas
+	numstones = 3;
+	nummonsters = 1 ;
+	lives = 3;  //vidas
+	reset();
 };
 
 // Reset the game when the player catches a princess
@@ -143,10 +163,24 @@ var reset = function () {//posicion inicial de princesa y heroe
 		var stone = {};
 		do{
 			stone.x = 32 + (Math.random() * (canvas.width - 64));
-		}while(stone.x > canvas.width - 64);
+		}while(stone.x > canvas.width - 64 ||
+			   (stone.x >= canvas.width / 2  &&
+			   stone.x <= (canvas.width / 2) + 16) ||//distinto posicion inicial 
+			   (stone.x >= princess.x  &&
+			   stone.x <= princess.x + 16)  ||//distinta posicion princesa
+			   (stone.x >= hero.x - 32 &&
+			   stone.x <= hero.x + 16 + 32)  //distinta posicion heroe seguridad de 32
+			   );
 		do{
 			stone.y = 32 + (Math.random() * (canvas.height - 64));
-		}while(stone.y > canvas.height - 64);
+		}while(stone.y > canvas.height - 64 ||
+			   (stone.y <= canvas.height / 2  &&
+			   stone.y >= (canvas.height / 2) - 16) ||//distinto posicion inicial 
+			   (stone.y <= princess.y  &&
+			   stone.y >= princess.y - 16) || //distinta posicion princesa
+			   (stone.y <= hero.y + 32 &&
+			   stone.y >= hero.y - 16 - 32)  //margen de seguridad de 32
+			   );
 
 		stones.push(stone);
 	}
@@ -172,31 +206,31 @@ var update = function (modifier) { //modifier es variable de tiempo creo
 		return;	
 	}
 	
-
 	if (38 in keysDown ) { // Player holding up
 		var aux = hero.y;
 		hero.y -= hero.speed * modifier;
-		if (hero.y <= 32 || stonetouching())
+		if (hero.y <= 32 || touching(stones))
 			hero.y = aux;
 	}
 	if (40 in keysDown) { // Player holding down
 		var aux = hero.y;
 		hero.y += hero.speed * modifier;
-		if (hero.y >= canvas.height - 64 || stonetouching())
+		if (hero.y >= canvas.height - 64 || touching(stones))
 			hero.y = aux;
 	}
 	if (37 in keysDown) { // Player holding left
 		var aux = hero.x;
 		hero.x -= hero.speed * modifier;
-		if (hero.x < 32 || stonetouching())
+		if (hero.x < 32 || touching(stones))
 			hero.x = aux;
 	}
 	if (39 in keysDown) { // Player holding right
 		var aux = hero.x;
 		hero.x += hero.speed * modifier;
-		if (hero.x >= canvas.width - 64 || stonetouching())
+		if (hero.x >= canvas.width - 64 || touching(stones))
 			hero.x = aux;
 	}
+
 
 //////////mosterssss movimientos///////////
 	for( var i = 0 ;  i < nummonsters; i++){
@@ -212,10 +246,20 @@ var update = function (modifier) { //modifier es variable de tiempo creo
 			monsters[i].y -= (hero.speed/8) * modifier
 		}
 	}
+	if (touching(monsters)){
+		--lives;
+		if (lives == 0){
+			newgame = true;
+			pause = true;
+			var p = document.getElementById("main");
+			p.innerHTML = "<h2 id='gameover'>HAS PERDIDO</h2>" +
+			"<div id='nmain'>Pulsa barra espaciadora para nuevo juego.</div>";
+			
+		}else{
+			reset();
+		}
+	}
 ///////////////////////////////////////////
-
-
-
 
 	// Are they touching?  //se tocan la princesa y el heroe
 	if (
@@ -225,7 +269,8 @@ var update = function (modifier) { //modifier es variable de tiempo creo
 		&& princess.y <= (hero.y + 16)   //arriba princesa
 	) {
 		++princessesCaught;
-		 numstones = 3 + Math.floor(princessesCaught / 3 ) //cada 5 princesas 1 piedra mas
+		numstones = 3 + Math.floor(princessesCaught / 3 ); //cada 3 princesas 1 piedra mas
+		nummonsters = Math.floor(princessesCaught / 6 );  //cada 6 princesas 1 monstruo mas
 		reset();  //para resetear(seguir jugando)
 	}
 };
@@ -264,7 +309,8 @@ var render = function () {
 	ctx.font = "24px Helvetica";
 	ctx.textAlign = "left";
 	ctx.textBaseline = "top";
-	ctx.fillText("Princesses caught: " + princessesCaught, 32, 32); //escribe texto
+	ctx.fillText("Princesas: " + princessesCaught, 32, 32); //escribe texto
+	ctx.fillText("Vidas: " + lives, 380, 32); //escribe texto
 };
 
 // The main game loop
