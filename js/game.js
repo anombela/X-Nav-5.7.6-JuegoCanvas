@@ -74,7 +74,7 @@ var numstones = 3;
 
 var monsters = [  //array de monstruos
 ];
-var nummonsters = 0 ;
+var nummonsters = 1 ;
 
 var lives = 3;  //vidas
 
@@ -270,7 +270,7 @@ var update = function (modifier) { //modifier es variable de tiempo creo
 	) {
 		++princessesCaught;
 		numstones = 3 + Math.floor(princessesCaught / 3 ); //cada 3 princesas 1 piedra mas
-		nummonsters = Math.floor(princessesCaught / 6 );  //cada 6 princesas 1 monstruo mas
+		nummonsters = 1 + Math.floor(princessesCaught / 6 );  //cada 6 princesas 1 monstruo mas
 		reset();  //para resetear(seguir jugando)
 	}
 };

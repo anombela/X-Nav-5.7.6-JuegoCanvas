@@ -22,7 +22,7 @@ li{
 	top:  180px; 
   	left: 182px; /*512/2 + */
   	color: red;
-  	font-size: 10px;
+  	font-size: 60px;
 }
 #gameover{
 	position: absolute;
